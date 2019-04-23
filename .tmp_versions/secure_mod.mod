@@ -1,2 +1,2 @@
-/home/jw562/compsci/pwsw_version/jw562/secure_mod.ko
-/home/jw562/compsci/pwsw_version/jw562/secure_mod.o
+/home/yl483/compsci_rootkit/secure_mod.ko
+/home/yl483/compsci_rootkit/secure_mod.o

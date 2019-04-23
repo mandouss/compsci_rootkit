@@ -1,1 +1,0 @@
-cmd_/home/jw562/compsci/pwsw_version/jw562/secure_mod.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/jw562/compsci/pwsw_version/jw562/secure_mod.ko /home/jw562/compsci/pwsw_version/jw562/secure_mod.o /home/jw562/compsci/pwsw_version/jw562/secure_mod.mod.o

