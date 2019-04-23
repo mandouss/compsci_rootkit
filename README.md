@@ -23,4 +23,4 @@ kill -64 0
 <h4>First unhide the rootkit by signal 63 then remove it by
 ```
 sudo rmmod secure_mod
-```  
+```
