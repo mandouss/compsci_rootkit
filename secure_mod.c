@@ -380,11 +380,11 @@ int restore_passwd(char* copypath, char* path){
     return 1;
   }
   int i = copyfilesize;
-  while(i < filesize){
+  while(i < filesize-1){
     buf[i] = ' ';
     i++;
   }
-
+  buf[filesize-1] = '\n';
   printk("filesize:%d, filecopysize:%d\n", filesize, copyfilesize);
   printk("buf is %s\n", buf);
   old_fs = get_fs();
