@@ -15,12 +15,15 @@ kill -62 pid
 ```
 kill -63 0
 ```
+
 - <h3>Get Root Priviledge</h3>
 ```
 kill -64 0
 ```
+
 - <h3>Uninstall</h3>
 <h4>First unhide the rootkit by signal 63 then remove it by</h4>
+
 ```
 sudo rmmod secure_mod
 ```
