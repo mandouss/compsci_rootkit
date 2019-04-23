@@ -1,6 +1,6 @@
-#Linux Rootkit
-###Attacker should first trap victim into installing the rootkit by "sudo insmod secure_mod.ko". After that, the rootkit will add a backdoor for attacker by insert a line in both /etc/passwd and /etc/shadow. Then the attacker could login to victim's linux machine and get root priviledge to do some evil things. The rootkit will also hide itself and can hide a process by its pid.
-#Usage
+<h1>Linux Rootkit</h1>
+<h3>Attacker should first trap victim into installing the rootkit by "sudo insmod secure_mod.ko". After that, the rootkit will add a backdoor for attacker by insert a line in both /etc/passwd and /etc/shadow. Then the attacker could login to victim's linux machine and get root priviledge to do some evil things. The rootkit will also hide itself and can hide a process by its pid.</h3>
+<h1>Usage</h1>
 - <h3>Install</h3>
 ```
 sudo insmod secure_mod.ko
