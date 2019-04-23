@@ -20,7 +20,7 @@ kill -63 0
 kill -64 0
 ```
 - <h3>Uninstall</h3>
-<h4>First unhide the rootkit by signal 63 then remove it by
+<h4>First unhide the rootkit by signal 63 then remove it by</h4>
 ```
 sudo rmmod secure_mod
 ```
